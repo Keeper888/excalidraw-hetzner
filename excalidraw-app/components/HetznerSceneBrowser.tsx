@@ -1,0 +1,136 @@
+import React, { useCallback, useEffect, useState } from "react";
+
+import { LoadIcon } from "@excalidraw/excalidraw/components/icons";
+
+import {
+  ensureAuthenticated,
+  hasMasterKey,
+  listScenes,
+  type SceneListItem,
+} from "../data/hetzner";
+
+import "./HetznerSceneBrowser.scss";
+
+export const HetznerSceneBrowser: React.FC<{
+  onLoad: (id: string) => void;
+  onClose: () => void;
+}> = ({ onLoad, onClose }) => {
+  const [scenes, setScenes] = useState<SceneListItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      if (!hasMasterKey()) {
+        await ensureAuthenticated();
+      }
+      const data = await listScenes();
+      setScenes(data.scenes);
+    } catch (err: any) {
+      setError(err?.message || "Failed to load scenes");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  const formatDate = (ts: number) => {
+    const d = new Date(ts);
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 1) {
+      return "just now";
+    }
+    if (diffMins < 60) {
+      return `${diffMins}m ago`;
+    }
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) {
+      return `${diffHours}h ago`;
+    }
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) {
+      return `${diffDays}d ago`;
+    }
+    return d.toLocaleDateString();
+  };
+
+  const formatSize = (bytes: number) => {
+    if (bytes < 1024) {
+      return `${bytes} B`;
+    }
+    if (bytes < 1024 * 1024) {
+      return `${(bytes / 1024).toFixed(1)} KB`;
+    }
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  return (
+    <div className="hetzner-browser__overlay" onClick={onClose}>
+      <div
+        className="hetzner-browser__dialog"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="hetzner-browser__header">
+          <h2>Your Drawings</h2>
+          <button className="hetzner-browser__close" onClick={onClose}>
+            &times;
+          </button>
+        </div>
+
+        {loading && <div className="hetzner-browser__empty">Loading...</div>}
+
+        {error && <div className="hetzner-browser__error">{error}</div>}
+
+        {!loading && !error && scenes.length === 0 && (
+          <div className="hetzner-browser__empty">
+            No saved drawings yet. Use Export &rarr; Save to Hetzner to save
+            your first drawing.
+          </div>
+        )}
+
+        {!loading && scenes.length > 0 && (
+          <ul className="hetzner-browser__list">
+            {scenes.map((scene) => (
+              <li key={scene.id} className="hetzner-browser__item">
+                <button
+                  className="hetzner-browser__item-btn"
+                  onClick={() => onLoad(scene.id)}
+                >
+                  <span className="hetzner-browser__item-name">
+                    {scene.name || "Untitled"}
+                  </span>
+                  <span className="hetzner-browser__item-meta">
+                    {formatDate(scene.updatedAt)} &middot;{" "}
+                    {formatSize(scene.size)}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export const OpenFromHetznerMenuItem: React.FC<{
+  onOpenBrowser: () => void;
+}> = ({ onOpenBrowser }) => {
+  return (
+    <button
+      className="dropdown-menu-item"
+      onClick={onOpenBrowser}
+      data-testid="open-hetzner-button"
+    >
+      <div className="dropdown-menu-item__icon">{LoadIcon}</div>
+      <div className="dropdown-menu-item__text">Open</div>
+    </button>
+  );
+};

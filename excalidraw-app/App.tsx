@@ -101,6 +101,7 @@ import { AppFooter } from "./components/AppFooter";
 import { AppMainMenu } from "./components/AppMainMenu";
 import { AppWelcomeScreen } from "./components/AppWelcomeScreen";
 import { ExportToHetzner, exportToHetzner } from "./components/ExportToHetzner";
+import { HetznerSceneBrowser } from "./components/HetznerSceneBrowser";
 import { importFromHetzner } from "./data/hetzner";
 import { TopErrorBoundary } from "./components/TopErrorBoundary";
 
@@ -446,6 +447,29 @@ const ExcalidrawWrapper = () => {
   });
 
   const [, forceRefresh] = useState(false);
+  const [showSceneBrowser, setShowSceneBrowser] = useState(false);
+
+  const handleLoadFromHetzner = useCallback(
+    async (id: string) => {
+      setShowSceneBrowser(false);
+      if (!excalidrawAPI) {
+        return;
+      }
+      try {
+        const imported = await importFromHetzner(id);
+        excalidrawAPI.updateScene({
+          elements: imported.elements || [],
+          appState: imported.appState || {},
+        });
+        excalidrawAPI.scrollToContent();
+      } catch (err: any) {
+        excalidrawAPI.updateScene({
+          appState: { errorMessage: err?.message || "Failed to load scene" },
+        });
+      }
+    },
+    [excalidrawAPI],
+  );
 
   useEffect(() => {
     if (isDevEnv()) {
@@ -972,6 +996,7 @@ const ExcalidrawWrapper = () => {
           theme={appTheme}
           setTheme={(theme) => setAppTheme(theme)}
           refresh={() => forceRefresh((prev) => !prev)}
+          onOpenFromHetzner={() => setShowSceneBrowser(true)}
         />
         <AppWelcomeScreen
           onCollabDialogOpen={onCollabDialogOpen}
@@ -1236,6 +1261,12 @@ const ExcalidrawWrapper = () => {
           />
         )}
       </Excalidraw>
+      {showSceneBrowser && (
+        <HetznerSceneBrowser
+          onLoad={handleLoadFromHetzner}
+          onClose={() => setShowSceneBrowser(false)}
+        />
+      )}
     </div>
   );
 };
