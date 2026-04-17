@@ -395,3 +395,10 @@ export const listScenes = () =>
   api<{ scenes: SceneListItem[]; totalBytes: number }>("/api/scenes", {
     auth: true,
   });
+
+export const renameScene = (id: string, name: string) =>
+  api<SceneListItem>(`/api/scenes/${id}/rename`, {
+    method: "PATCH",
+    body: JSON.stringify({ name }),
+    auth: true,
+  });

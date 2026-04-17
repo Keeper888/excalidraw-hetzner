@@ -1,11 +1,10 @@
-import React, { useCallback, useEffect, useState } from "react";
-
-import { LoadIcon } from "@excalidraw/excalidraw/components/icons";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   ensureAuthenticated,
   hasMasterKey,
   listScenes,
+  renameScene,
   type SceneListItem,
 } from "../data/hetzner";
 
@@ -18,6 +17,9 @@ export const HetznerSceneBrowser: React.FC<{
   const [scenes, setScenes] = useState<SceneListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState("");
+  const renameInputRef = useRef<HTMLInputElement>(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -38,6 +40,45 @@ export const HetznerSceneBrowser: React.FC<{
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    if (editingId && renameInputRef.current) {
+      renameInputRef.current.focus();
+      renameInputRef.current.select();
+    }
+  }, [editingId]);
+
+  const handleRenameStart = (scene: SceneListItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingId(scene.id);
+    setEditingName(scene.name || "");
+  };
+
+  const handleRenameSubmit = async () => {
+    if (!editingId) {
+      return;
+    }
+    const trimmed = editingName.trim();
+    if (trimmed) {
+      try {
+        await renameScene(editingId, trimmed);
+        setScenes((prev) =>
+          prev.map((s) => (s.id === editingId ? { ...s, name: trimmed } : s)),
+        );
+      } catch {
+        // silently fail — name stays unchanged in list
+      }
+    }
+    setEditingId(null);
+  };
+
+  const handleRenameKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleRenameSubmit();
+    } else if (e.key === "Escape") {
+      setEditingId(null);
+    }
+  };
 
   const formatDate = (ts: number) => {
     const d = new Date(ts);
@@ -99,38 +140,45 @@ export const HetznerSceneBrowser: React.FC<{
           <ul className="hetzner-browser__list">
             {scenes.map((scene) => (
               <li key={scene.id} className="hetzner-browser__item">
-                <button
-                  className="hetzner-browser__item-btn"
-                  onClick={() => onLoad(scene.id)}
-                >
-                  <span className="hetzner-browser__item-name">
-                    {scene.name || "Untitled"}
-                  </span>
-                  <span className="hetzner-browser__item-meta">
-                    {formatDate(scene.updatedAt)} &middot;{" "}
-                    {formatSize(scene.size)}
-                  </span>
-                </button>
+                {editingId === scene.id ? (
+                  <div className="hetzner-browser__rename-row">
+                    <input
+                      ref={renameInputRef}
+                      className="hetzner-browser__rename-input"
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      onKeyDown={handleRenameKeyDown}
+                      onBlur={handleRenameSubmit}
+                    />
+                  </div>
+                ) : (
+                  <button
+                    className="hetzner-browser__item-btn"
+                    onClick={() => onLoad(scene.id)}
+                  >
+                    <span className="hetzner-browser__item-name">
+                      {scene.name || "Untitled"}
+                    </span>
+                    <span className="hetzner-browser__item-right">
+                      <span className="hetzner-browser__item-meta">
+                        {formatDate(scene.updatedAt)} &middot;{" "}
+                        {formatSize(scene.size)}
+                      </span>
+                      <span
+                        className="hetzner-browser__rename-btn"
+                        title="Rename"
+                        onClick={(e) => handleRenameStart(scene, e)}
+                      >
+                        &#9998;
+                      </span>
+                    </span>
+                  </button>
+                )}
               </li>
             ))}
           </ul>
         )}
       </div>
     </div>
-  );
-};
-
-export const OpenFromHetznerMenuItem: React.FC<{
-  onOpenBrowser: () => void;
-}> = ({ onOpenBrowser }) => {
-  return (
-    <button
-      className="dropdown-menu-item"
-      onClick={onOpenBrowser}
-      data-testid="open-hetzner-button"
-    >
-      <div className="dropdown-menu-item__icon">{LoadIcon}</div>
-      <div className="dropdown-menu-item__text">Open</div>
-    </button>
   );
 };

@@ -86,6 +86,15 @@ export function putScene(
   return record;
 }
 
+export function renameScene(id: string, name: string): SceneMeta | null {
+  if (!isSafeId(id) || !existsSync(sceneMetaPath(id))) return null;
+  const meta = JSON.parse(readFileSync(sceneMetaPath(id), "utf8")) as SceneMeta;
+  meta.name = name;
+  meta.updatedAt = Date.now();
+  writeFileSync(sceneMetaPath(id), JSON.stringify(meta, null, 2));
+  return meta;
+}
+
 export function getSceneMeta(id: string): SceneMeta | null {
   if (!isSafeId(id) || !existsSync(sceneMetaPath(id))) return null;
   return JSON.parse(readFileSync(sceneMetaPath(id), "utf8"));

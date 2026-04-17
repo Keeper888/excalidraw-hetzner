@@ -95,6 +95,51 @@
   font-size: 0.9rem;
 }
 
+.hetzner-browser__item-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.hetzner-browser__rename-btn {
+  opacity: 0;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  transition: opacity 0.1s, background 0.1s;
+
+  .hetzner-browser__item-btn:hover & {
+    opacity: 0.5;
+  }
+
+  &:hover {
+    opacity: 1 !important;
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.hetzner-browser__rename-row {
+  padding: 0.5rem 1.5rem;
+}
+
+.hetzner-browser__rename-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid rgba(108, 99, 255, 0.5);
+  background: rgba(0, 0, 0, 0.3);
+  color: inherit;
+  font-size: 0.95rem;
+  outline: none;
+  box-sizing: border-box;
+
+  &:focus {
+    border-color: #6c63ff;
+  }
+}
+
 .hetzner-browser__error {
   padding: 1rem 1.5rem;
   color: #ef5350;

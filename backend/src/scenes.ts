@@ -8,6 +8,7 @@ import {
   isSafeId,
   listScenes,
   putScene,
+  renameScene,
   totalStorageBytes,
 } from "./store.js";
 
@@ -92,6 +93,20 @@ scenesRouter.get("/:id", (req, res) => {
     meta,
     ciphertext: blob.toString("base64"),
   });
+});
+
+scenesRouter.patch("/:id/rename", (req, res) => {
+  const { name } = req.body as { name?: string };
+  if (!name || typeof name !== "string") {
+    res.status(400).json({ error: "name required" });
+    return;
+  }
+  const meta = renameScene(req.params.id, name);
+  if (!meta) {
+    res.status(404).json({ error: "not found" });
+    return;
+  }
+  res.json(meta);
 });
 
 scenesRouter.delete("/:id", (req, res) => {

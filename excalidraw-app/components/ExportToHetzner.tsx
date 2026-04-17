@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { nanoid } from "nanoid";
 
 import { trackEvent } from "@excalidraw/excalidraw/analytics";
@@ -29,7 +29,7 @@ export const exportToHetzner = async (
   try {
     await navigator.clipboard.writeText(url);
   } catch {
-    // clipboard may be unavailable; the URL is returned anyway
+    // clipboard may be unavailable
   }
   return { url, ...result };
 };
@@ -42,6 +42,8 @@ export const ExportToHetzner: React.FC<{
   onError: (error: Error) => void;
   onSuccess: () => void;
 }> = ({ elements, appState, files, name, onError, onSuccess }) => {
+  const [sceneName, setSceneName] = useState(name || "");
+
   return (
     <Card color="primary">
       <div className="Card-icon">
@@ -55,8 +57,24 @@ export const ExportToHetzner: React.FC<{
       </div>
       <h2>Save to Hetzner</h2>
       <div className="Card-details">
-        Encrypted in your browser with a passkey-derived key. Your private
-        Hetzner server only ever sees opaque ciphertext.
+        <input
+          type="text"
+          value={sceneName}
+          onChange={(e) => setSceneName(e.target.value)}
+          placeholder="Drawing name"
+          style={{
+            width: "100%",
+            padding: "0.5rem 0.75rem",
+            borderRadius: "6px",
+            border: "1px solid rgba(255,255,255,0.15)",
+            background: "rgba(0,0,0,0.2)",
+            color: "inherit",
+            fontSize: "0.9rem",
+            marginBottom: "0.5rem",
+            boxSizing: "border-box",
+          }}
+          autoFocus
+        />
       </div>
       <ToolButton
         className="Card-button"
@@ -65,9 +83,10 @@ export const ExportToHetzner: React.FC<{
         aria-label="Save to Hetzner"
         showAriaLabel={true}
         onClick={async () => {
+          const finalName = sceneName.trim() || "Untitled";
           try {
             trackEvent("export", "hetzner", `ui (${getFrame()})`);
-            await exportToHetzner(elements, appState, files, name);
+            await exportToHetzner(elements, appState, files, finalName);
             onSuccess();
           } catch (error: any) {
             console.error(error);
