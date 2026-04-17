@@ -10,6 +10,7 @@ RUN --mount=type=cache,target=/root/.cache/yarn \
     npm_config_target_arch=${TARGETARCH} yarn --network-timeout 600000
 
 ARG NODE_ENV=production
+ARG VITE_HETZNER_API=https://draw-api.dominoeffect.io
 
 RUN npm_config_target_arch=${TARGETARCH} yarn build:app:docker
 
