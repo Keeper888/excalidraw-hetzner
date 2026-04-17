@@ -1,4 +1,8 @@
-import { eyeIcon, LoadIcon } from "@excalidraw/excalidraw/components/icons";
+import {
+  eyeIcon,
+  LoadIcon,
+  PlusIcon,
+} from "@excalidraw/excalidraw/components/icons";
 import { MainMenu } from "@excalidraw/excalidraw/index";
 import React from "react";
 
@@ -18,9 +22,13 @@ export const AppMainMenu: React.FC<{
   setTheme: (theme: Theme | "system") => void;
   refresh: () => void;
   onOpenFromHetzner: () => void;
+  onNewFile: () => void;
 }> = React.memo((props) => {
   return (
     <MainMenu>
+      <MainMenu.Item icon={PlusIcon} onSelect={props.onNewFile}>
+        New File
+      </MainMenu.Item>
       <MainMenu.Item icon={LoadIcon} onSelect={props.onOpenFromHetzner}>
         Open
       </MainMenu.Item>

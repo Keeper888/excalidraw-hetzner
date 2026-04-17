@@ -997,6 +997,11 @@ const ExcalidrawWrapper = () => {
           setTheme={(theme) => setAppTheme(theme)}
           refresh={() => forceRefresh((prev) => !prev)}
           onOpenFromHetzner={() => setShowSceneBrowser(true)}
+          onNewFile={() => {
+            if (excalidrawAPI) {
+              excalidrawAPI.resetScene();
+            }
+          }}
         />
         <AppWelcomeScreen
           onCollabDialogOpen={onCollabDialogOpen}
