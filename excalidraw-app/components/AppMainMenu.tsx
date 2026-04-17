@@ -35,7 +35,6 @@ export const AppMainMenu: React.FC<{
       <MainMenu.DefaultItems.Help />
       <MainMenu.DefaultItems.ClearCanvas />
       <MainMenu.Separator />
-      <MainMenu.DefaultItems.Socials />
       {isDevEnv() && (
         <MainMenu.Item
           icon={eyeIcon}
