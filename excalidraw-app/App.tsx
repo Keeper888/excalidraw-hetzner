@@ -42,7 +42,6 @@ import {
   GithubIcon,
   XBrandIcon,
   DiscordIcon,
-  ExcalLogo,
   usersIcon,
   exportToPlus,
   share,
@@ -90,7 +89,6 @@ import {
 } from "./app-jotai";
 import {
   FIREBASE_STORAGE_PREFIXES,
-  isExcalidrawPlusSignedUser,
   STORAGE_KEYS,
   SYNC_BROWSER_TABS_TIMEOUT,
 } from "./app_constants";
@@ -102,10 +100,8 @@ import Collab, {
 import { AppFooter } from "./components/AppFooter";
 import { AppMainMenu } from "./components/AppMainMenu";
 import { AppWelcomeScreen } from "./components/AppWelcomeScreen";
-import {
-  ExportToExcalidrawPlus,
-  exportToExcalidrawPlus,
-} from "./components/ExportToExcalidrawPlus";
+import { ExportToHetzner, exportToHetzner } from "./components/ExportToHetzner";
+import { importFromHetzner } from "./data/hetzner";
 import { TopErrorBoundary } from "./components/TopErrorBoundary";
 
 import {
@@ -145,7 +141,6 @@ import { ExcalidrawPlusIframeExport } from "./ExcalidrawPlusIframeExport";
 
 import "./index.scss";
 
-import { ExcalidrawPlusPromoBanner } from "./components/ExcalidrawPlusPromoBanner";
 import { AppSidebar } from "./components/AppSidebar";
 
 import type { CollabAPI } from "./collab/Collab";
@@ -227,6 +222,9 @@ const initializeScene = async (opts: {
   const jsonBackendMatch = window.location.hash.match(
     /^#json=([a-zA-Z0-9_-]+),([a-zA-Z0-9_-]+)$/,
   );
+  const hetznerMatch = window.location.hash.match(
+    /^#hetzner=([A-Za-z0-9_-]+)$/,
+  );
   const externalUrlMatch = window.location.hash.match(/^#url=(.*)$/);
 
   const localDataState = importFromLocalStorage();
@@ -247,7 +245,12 @@ const initializeScene = async (opts: {
   };
 
   let roomLinkData = getCollaborationLinkData(window.location.href);
-  const isExternalScene = !!(id || jsonBackendMatch || roomLinkData);
+  const isExternalScene = !!(
+    id ||
+    jsonBackendMatch ||
+    hetznerMatch ||
+    roomLinkData
+  );
   if (isExternalScene) {
     if (
       // don't prompt if scene is empty
@@ -278,6 +281,30 @@ const initializeScene = async (opts: {
             localDataState?.appState,
           ),
         };
+      } else if (hetznerMatch) {
+        try {
+          const imported = await importFromHetzner(hetznerMatch[1]);
+          scene = {
+            elements: bumpElementVersions(
+              restoreElements(imported.elements, null, {
+                repairBindings: true,
+                deleteInvisibleElements: true,
+              }),
+              localDataState?.elements,
+            ),
+            appState: restoreAppState(
+              imported.appState,
+              localDataState?.appState,
+            ),
+          };
+        } catch (err: any) {
+          console.error("hetzner load failed", err);
+          window.alert(
+            `Failed to load encrypted scene from Hetzner: ${
+              err?.message || err
+            }`,
+          );
+        }
       }
       scene.scrollToContent = true;
       if (!roomLinkData) {
@@ -862,45 +889,6 @@ const ExcalidrawWrapper = () => {
     );
   }
 
-  const ExcalidrawPlusCommand = {
-    label: "Excalidraw+",
-    category: DEFAULT_CATEGORIES.links,
-    predicate: true,
-    icon: <div style={{ width: 14 }}>{ExcalLogo}</div>,
-    keywords: ["plus", "cloud", "server"],
-    perform: () => {
-      window.open(
-        `${
-          import.meta.env.VITE_APP_PLUS_LP
-        }/plus?utm_source=excalidraw&utm_medium=app&utm_content=command_palette`,
-        "_blank",
-      );
-    },
-  };
-  const ExcalidrawPlusAppCommand = {
-    label: "Sign up",
-    category: DEFAULT_CATEGORIES.links,
-    predicate: true,
-    icon: <div style={{ width: 14 }}>{ExcalLogo}</div>,
-    keywords: [
-      "excalidraw",
-      "plus",
-      "cloud",
-      "server",
-      "signin",
-      "login",
-      "signup",
-    ],
-    perform: () => {
-      window.open(
-        `${
-          import.meta.env.VITE_APP_PLUS_APP
-        }?utm_source=excalidraw&utm_medium=app&utm_content=command_palette`,
-        "_blank",
-      );
-    },
-  };
-
   return (
     <div
       style={{ height: "100%" }}
@@ -922,7 +910,7 @@ const ExcalidrawWrapper = () => {
               renderCustomUI: excalidrawAPI
                 ? (elements, appState, files) => {
                     return (
-                      <ExportToExcalidrawPlus
+                      <ExportToHetzner
                         elements={elements}
                         appState={appState}
                         files={files}
@@ -959,12 +947,6 @@ const ExcalidrawWrapper = () => {
 
           return (
             <div className="excalidraw-ui-top-right">
-              {excalidrawAPI?.getEditorInterface().formFactor === "desktop" && (
-                <ExcalidrawPlusPromoBanner
-                  isSignedIn={isExcalidrawPlusSignedUser}
-                />
-              )}
-
               {collabError.message && <CollabError collabError={collabError} />}
               <LiveCollaborationTrigger
                 isCollaborating={isCollaborating}
@@ -1000,10 +982,10 @@ const ExcalidrawWrapper = () => {
           <OverwriteConfirmDialog.Actions.SaveToDisk />
           {excalidrawAPI && (
             <OverwriteConfirmDialog.Action
-              title={t("overwriteConfirm.action.excalidrawPlus.title")}
-              actionLabel={t("overwriteConfirm.action.excalidrawPlus.button")}
+              title="Save to Hetzner"
+              actionLabel="Save to Hetzner"
               onClick={() => {
-                exportToExcalidrawPlus(
+                exportToHetzner(
                   excalidrawAPI.getSceneElements(),
                   excalidrawAPI.getAppState(),
                   excalidrawAPI.getFiles(),
@@ -1011,7 +993,8 @@ const ExcalidrawWrapper = () => {
                 );
               }}
             >
-              {t("overwriteConfirm.action.excalidrawPlus.description")}
+              Encrypt the scene in your browser and store it on your private
+              Hetzner server.
             </OverwriteConfirmDialog.Action>
           )}
         </OverwriteConfirmDialog>
@@ -1203,24 +1186,15 @@ const ExcalidrawWrapper = () => {
                 );
               },
             },
-            ...(isExcalidrawPlusSignedUser
-              ? [
-                  {
-                    ...ExcalidrawPlusAppCommand,
-                    label: "Sign in / Go to Excalidraw+",
-                  },
-                ]
-              : [ExcalidrawPlusCommand, ExcalidrawPlusAppCommand]),
-
             {
-              label: t("overwriteConfirm.action.excalidrawPlus.button"),
+              label: "Save to Hetzner",
               category: DEFAULT_CATEGORIES.export,
               icon: exportToPlus,
               predicate: true,
-              keywords: ["plus", "export", "save", "backup"],
+              keywords: ["hetzner", "export", "save", "backup", "encrypt"],
               perform: () => {
                 if (excalidrawAPI) {
-                  exportToExcalidrawPlus(
+                  exportToHetzner(
                     excalidrawAPI.getSceneElements(),
                     excalidrawAPI.getAppState(),
                     excalidrawAPI.getFiles(),
