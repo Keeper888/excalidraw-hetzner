@@ -1265,13 +1265,13 @@ const ExcalidrawWrapper = () => {
             ref={debugCanvasRef}
           />
         )}
+        {showSceneBrowser && (
+          <HetznerSceneBrowser
+            onLoad={handleLoadFromHetzner}
+            onClose={() => setShowSceneBrowser(false)}
+          />
+        )}
       </Excalidraw>
-      {showSceneBrowser && (
-        <HetznerSceneBrowser
-          onLoad={handleLoadFromHetzner}
-          onClose={() => setShowSceneBrowser(false)}
-        />
-      )}
     </div>
   );
 };

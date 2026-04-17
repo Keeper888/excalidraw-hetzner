@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
+import { Dialog } from "@excalidraw/excalidraw/components/Dialog";
+
 import {
   ensureAuthenticated,
   hasMasterKey,
@@ -66,7 +68,7 @@ export const HetznerSceneBrowser: React.FC<{
           prev.map((s) => (s.id === editingId ? { ...s, name: trimmed } : s)),
         );
       } catch {
-        // silently fail — name stays unchanged in list
+        // silently fail
       }
     }
     setEditingId(null);
@@ -113,72 +115,64 @@ export const HetznerSceneBrowser: React.FC<{
   };
 
   return (
-    <div className="hetzner-browser__overlay" onClick={onClose}>
-      <div
-        className="hetzner-browser__dialog"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="hetzner-browser__header">
-          <h2>Your Drawings</h2>
-          <button className="hetzner-browser__close" onClick={onClose}>
-            &times;
-          </button>
+    <Dialog
+      onCloseRequest={onClose}
+      title="Your Drawings"
+      size="small"
+    >
+      {loading && <div className="hetzner-browser__empty">Loading...</div>}
+
+      {error && <div className="hetzner-browser__error">{error}</div>}
+
+      {!loading && !error && scenes.length === 0 && (
+        <div className="hetzner-browser__empty">
+          No saved drawings yet. Use Export &rarr; Save to Hetzner to save your
+          first drawing.
         </div>
+      )}
 
-        {loading && <div className="hetzner-browser__empty">Loading...</div>}
-
-        {error && <div className="hetzner-browser__error">{error}</div>}
-
-        {!loading && !error && scenes.length === 0 && (
-          <div className="hetzner-browser__empty">
-            No saved drawings yet. Use Export &rarr; Save to Hetzner to save
-            your first drawing.
-          </div>
-        )}
-
-        {!loading && scenes.length > 0 && (
-          <ul className="hetzner-browser__list">
-            {scenes.map((scene) => (
-              <li key={scene.id} className="hetzner-browser__item">
-                {editingId === scene.id ? (
-                  <div className="hetzner-browser__rename-row">
-                    <input
-                      ref={renameInputRef}
-                      className="hetzner-browser__rename-input"
-                      value={editingName}
-                      onChange={(e) => setEditingName(e.target.value)}
-                      onKeyDown={handleRenameKeyDown}
-                      onBlur={handleRenameSubmit}
-                    />
-                  </div>
-                ) : (
-                  <button
-                    className="hetzner-browser__item-btn"
-                    onClick={() => onLoad(scene.id)}
-                  >
-                    <span className="hetzner-browser__item-name">
-                      {scene.name || "Untitled"}
+      {!loading && scenes.length > 0 && (
+        <ul className="hetzner-browser__list">
+          {scenes.map((scene) => (
+            <li key={scene.id} className="hetzner-browser__item">
+              {editingId === scene.id ? (
+                <div className="hetzner-browser__rename-row">
+                  <input
+                    ref={renameInputRef}
+                    className="hetzner-browser__rename-input"
+                    value={editingName}
+                    onChange={(e) => setEditingName(e.target.value)}
+                    onKeyDown={handleRenameKeyDown}
+                    onBlur={handleRenameSubmit}
+                  />
+                </div>
+              ) : (
+                <button
+                  className="hetzner-browser__item-btn"
+                  onClick={() => onLoad(scene.id)}
+                >
+                  <span className="hetzner-browser__item-name">
+                    {scene.name || "Untitled"}
+                  </span>
+                  <span className="hetzner-browser__item-right">
+                    <span className="hetzner-browser__item-meta">
+                      {formatDate(scene.updatedAt)} &middot;{" "}
+                      {formatSize(scene.size)}
                     </span>
-                    <span className="hetzner-browser__item-right">
-                      <span className="hetzner-browser__item-meta">
-                        {formatDate(scene.updatedAt)} &middot;{" "}
-                        {formatSize(scene.size)}
-                      </span>
-                      <span
-                        className="hetzner-browser__rename-btn"
-                        title="Rename"
-                        onClick={(e) => handleRenameStart(scene, e)}
-                      >
-                        &#9998;
-                      </span>
+                    <span
+                      className="hetzner-browser__rename-btn"
+                      title="Rename"
+                      onClick={(e) => handleRenameStart(scene, e)}
+                    >
+                      &#9998;
                     </span>
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </div>
+                  </span>
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </Dialog>
   );
 };
