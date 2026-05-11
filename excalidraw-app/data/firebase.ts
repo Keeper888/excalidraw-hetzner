@@ -128,7 +128,7 @@ export const saveFilesToFirebase = async ({
           {
             method: "PUT",
             headers: { "Content-Type": "application/octet-stream" },
-            body: buffer,
+            body: buffer as unknown as BodyInit,
           },
         );
         if (res.ok) {
@@ -204,7 +204,9 @@ export const saveToFirebase = async (
     });
 
     SceneVersionCache.set(socket, reconciledElements);
-    return toBrandedType<RemoteExcalidrawElement[]>(reconciledElements);
+    return toBrandedType<RemoteExcalidrawElement[]>(
+      reconciledElements as SyncableExcalidrawElement[],
+    );
   } catch (error: any) {
     console.error("saveToFirebase (self-hosted) failed:", error);
     return null;
