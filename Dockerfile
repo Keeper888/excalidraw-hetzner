@@ -11,6 +11,8 @@ RUN --mount=type=cache,target=/root/.cache/yarn \
 
 ARG NODE_ENV=production
 ARG VITE_HETZNER_API=https://draw-api.dominoeffect.io
+ARG VITE_APP_WS_SERVER_URL=https://collab.ricepudding.dominoeffect.io
+ARG VITE_APP_COLLAB_BACKEND_URL=https://draw-api.dominoeffect.io
 
 RUN npm_config_target_arch=${TARGETARCH} yarn build:app:docker
 
